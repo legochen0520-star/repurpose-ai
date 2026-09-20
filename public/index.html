@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Repurpose AI — One post becomes ten</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Repurpose<span>AI</span></div>
+    <div class="usage-badge" id="usageBadge">Loading…</div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <h1>Turn one piece of content into posts for every platform</h1>
+      <p>Paste a blog post, video transcript, or newsletter draft. Get a Twitter/X thread, LinkedIn post, Instagram caption, YouTube description, and newsletter blurb — all in one click.</p>
+    </section>
+
+    <section class="tool">
+      <textarea id="contentInput" placeholder="Paste your blog post, transcript, or notes here (at least a few sentences)..."></textarea>
+
+      <div class="platforms">
+        <label><input type="checkbox" value="twitter" checked> Twitter/X thread</label>
+        <label><input type="checkbox" value="linkedin" checked> LinkedIn post</label>
+        <label><input type="checkbox" value="instagram" checked> Instagram caption</label>
+        <label><input type="checkbox" value="youtube"> YouTube description</label>
+        <label><input type="checkbox" value="newsletter"> Newsletter blurb</label>
+      </div>
+
+      <button id="generateBtn">Generate</button>
+      <div id="errorMsg" class="error"></div>
+    </section>
+
+    <section id="results" class="results"></section>
+  </main>
+
+  <div id="upgradeModal" class="modal hidden">
+    <div class="modal-content">
+      <h2>You've used your 3 free generations</h2>
+      <p>Upgrade to Repurpose AI Pro for unlimited generations, all platforms, and priority support.</p>
+      <div class="price">$15<span>/month</span></div>
+      <button id="upgradeBtn">Upgrade Now</button>
+      <button id="closeModal" class="secondary">Maybe later</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "repurpose-ai",
+  "version": "0.1.0",
+  "description": "AI content repurposing tool - turn one piece of content into posts for every platform",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "@anthropic-ai/sdk": "^0.32.1",
+    "stripe": "^17.3.1",
+    "dotenv": "^16.4.5"
+  }
+}
