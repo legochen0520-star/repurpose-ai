@@ -67,4 +67,15 @@ function unsetPaidByCustomerId(stripeCustomerId) {
   save(data);
 }
 
-module.exports = { getOrCreateUser, incrementUsage, setPaid, unsetPaidByCustomerId };
+function getStats() {
+  const data = load();
+  const users = Object.values(data.users);
+  return {
+    totalVisitors: users.length,
+    totalGenerations: users.reduce((sum, u) => sum + u.usageCount, 0),
+    paidUsers: users.filter((u) => u.isPaid).length,
+    activatedUsers: users.filter((u) => u.usageCount > 0).length,
+  };
+}
+
+module.exports = { getOrCreateUser, incrementUsage, setPaid, unsetPaidByCustomerId, getStats };

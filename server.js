@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const Anthropic = require('@anthropic-ai/sdk');
-const { getOrCreateUser, incrementUsage, setPaid, unsetPaidByCustomerId } = require('./store');
+const { getOrCreateUser, incrementUsage, setPaid, unsetPaidByCustomerId, getStats } = require('./store');
 
 const FREE_LIMIT = 3;
 const app = express();
@@ -144,6 +144,13 @@ app.post('/api/create-checkout-session', async (req, res) => {
     console.error(err);
     res.status(500).json({ error: 'Could not start checkout.' });
   }
+});
+
+app.get('/api/admin/stats', (req, res) => {
+  if (!process.env.ADMIN_KEY || req.query.key !== process.env.ADMIN_KEY) {
+    return res.status(404).end();
+  }
+  res.json(getStats());
 });
 
 const PORT = process.env.PORT || 3000;
