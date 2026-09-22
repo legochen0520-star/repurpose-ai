@@ -26,7 +26,7 @@ function getOrCreateUser(anonId) {
       anonId,
       usageCount: 0,
       isPaid: false,
-      stripeCustomerId: null,
+      customerId: null,
       createdAt: new Date().toISOString(),
     };
     save(data);
@@ -41,26 +41,26 @@ function incrementUsage(anonId) {
   save(data);
 }
 
-function setPaid(anonId, stripeCustomerId) {
+function setPaid(anonId, customerId) {
   const data = load();
   if (!data.users[anonId]) {
     data.users[anonId] = {
       anonId,
       usageCount: 0,
       isPaid: false,
-      stripeCustomerId: null,
+      customerId: null,
       createdAt: new Date().toISOString(),
     };
   }
   data.users[anonId].isPaid = true;
-  data.users[anonId].stripeCustomerId = stripeCustomerId;
+  data.users[anonId].customerId = customerId;
   save(data);
 }
 
-function unsetPaidByCustomerId(stripeCustomerId) {
+function unsetPaidByCustomerId(customerId) {
   const data = load();
   for (const user of Object.values(data.users)) {
-    if (user.stripeCustomerId === stripeCustomerId) {
+    if (user.customerId === customerId) {
       user.isPaid = false;
     }
   }

@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
+const crypto = require('crypto');
 const Anthropic = require('@anthropic-ai/sdk');
 const { getOrCreateUser, incrementUsage, setPaid, unsetPaidByCustomerId, getStats } = require('./store');
 
@@ -9,34 +10,30 @@ const app = express();
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Stripe webhook needs the raw body, so register it BEFORE express.json()
-app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), (req, res) => {
-  if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) {
-    return res.status(501).send('Stripe not configured');
-  }
-  const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-  let event;
-  try {
-    event = stripe.webhooks.constructEvent(
-      req.body,
-      req.headers['stripe-signature'],
-      process.env.STRIPE_WEBHOOK_SECRET
-    );
-  } catch (err) {
-    return res.status(400).send(`Webhook signature verification failed: ${err.message}`);
+// Lemon Squeezy webhook needs the raw body to verify the signature, so register it BEFORE express.json()
+app.post('/api/lemon-webhook', express.raw({ type: 'application/json' }), (req, res) => {
+  const secret = process.env.LEMONSQUEEZY_WEBHOOK_SECRET;
+  if (!secret) {
+    return res.status(501).send('Lemon Squeezy not configured');
   }
 
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data.object;
-    const anonId = session.client_reference_id;
-    if (anonId) {
-      setPaid(anonId, session.customer);
-    }
+  const signature = Buffer.from(req.headers['x-signature'] || '', 'utf8');
+  const expected = Buffer.from(crypto.createHmac('sha256', secret).update(req.body).digest('hex'), 'utf8');
+  if (signature.length !== expected.length || !crypto.timingSafeEqual(signature, expected)) {
+    return res.status(400).send('Invalid signature');
   }
 
-  if (event.type === 'customer.subscription.deleted') {
-    const sub = event.data.object;
-    unsetPaidByCustomerId(sub.customer);
+  const event = JSON.parse(req.body.toString('utf8'));
+  const eventName = event.meta?.event_name;
+  const anonId = event.meta?.custom_data?.anon_id;
+  const customerId = event.data?.attributes?.customer_id;
+
+  if (eventName === 'subscription_created' && anonId) {
+    setPaid(anonId, customerId);
+  }
+
+  if (eventName === 'subscription_cancelled' || eventName === 'subscription_expired') {
+    unsetPaidByCustomerId(customerId);
   }
 
   res.json({ received: true });
@@ -123,27 +120,16 @@ app.post('/api/generate', async (req, res) => {
   }
 });
 
-app.post('/api/create-checkout-session', async (req, res) => {
-  if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_PRICE_ID) {
-    return res.status(501).json({ error: 'Stripe not configured yet. See README.' });
+app.post('/api/create-checkout-session', (req, res) => {
+  if (!process.env.LEMONSQUEEZY_CHECKOUT_URL) {
+    return res.status(501).json({ error: 'Checkout not configured yet. See README.' });
   }
-  const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
   const { anonId } = req.body;
   if (!anonId) return res.status(400).json({ error: 'anonId required' });
 
-  try {
-    const session = await stripe.checkout.sessions.create({
-      mode: 'subscription',
-      line_items: [{ price: process.env.STRIPE_PRICE_ID, quantity: 1 }],
-      client_reference_id: anonId,
-      success_url: `${req.headers.origin}/?upgraded=1`,
-      cancel_url: `${req.headers.origin}/?canceled=1`,
-    });
-    res.json({ url: session.url });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Could not start checkout.' });
-  }
+  const url = new URL(process.env.LEMONSQUEEZY_CHECKOUT_URL);
+  url.searchParams.set('checkout[custom][anon_id]', anonId);
+  res.json({ url: url.toString() });
 });
 
 app.get('/api/admin/stats', (req, res) => {
